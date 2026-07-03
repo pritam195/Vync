@@ -12,13 +12,13 @@ if (fs.existsSync(envTestPath)) {
 }
 
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'meetify-test-secret';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'vync-test-secret';
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 process.env.JWT_COOKIE_EXPIRES_IN = process.env.JWT_COOKIE_EXPIRES_IN || '1';
 process.env.STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 's3';
 process.env.LOCAL_UPLOADS_ENABLED = process.env.LOCAL_UPLOADS_ENABLED || 'false';
 
-const mongoUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/meetify_test';
+const mongoUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/vync_test';
 const databaseName = new URL(mongoUri).pathname.replace(/^\//, '').split('?')[0];
 
 if (!/test|jest/i.test(databaseName)) {

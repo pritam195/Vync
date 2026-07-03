@@ -2,18 +2,18 @@ import { jest } from '@jest/globals';
 import { SHARED_FILE_SIZE_LIMIT } from '../src/utils/uploadValidation.js';
 
 const mockUploadSharedFileToS3 = jest.fn(async ({ file, meetingId }) => ({
-  bucket: 'meetify-test-uploads',
-  fileUrl: `https://cdn.example.test/meetify/meetings/${meetingId}/files/mock-${file.originalname}`,
-  publicUrl: `https://cdn.example.test/meetify/meetings/${meetingId}/files/mock-${file.originalname}`,
-  s3Key: `meetify/meetings/${meetingId}/files/mock-${file.originalname}`,
+  bucket: 'vync-test-uploads',
+  fileUrl: `https://cdn.example.test/vync/meetings/${meetingId}/files/mock-${file.originalname}`,
+  publicUrl: `https://cdn.example.test/vync/meetings/${meetingId}/files/mock-${file.originalname}`,
+  s3Key: `vync/meetings/${meetingId}/files/mock-${file.originalname}`,
   storageProvider: 's3',
 }));
 
 const mockUploadRecordingToS3 = jest.fn(async ({ file, meetingId }) => ({
-  bucket: 'meetify-test-uploads',
-  fileUrl: `https://cdn.example.test/meetify/meetings/${meetingId}/recordings/mock-${file.originalname}`,
-  publicUrl: `https://cdn.example.test/meetify/meetings/${meetingId}/recordings/mock-${file.originalname}`,
-  s3Key: `meetify/meetings/${meetingId}/recordings/mock-${file.originalname}`,
+  bucket: 'vync-test-uploads',
+  fileUrl: `https://cdn.example.test/vync/meetings/${meetingId}/recordings/mock-${file.originalname}`,
+  publicUrl: `https://cdn.example.test/vync/meetings/${meetingId}/recordings/mock-${file.originalname}`,
+  s3Key: `vync/meetings/${meetingId}/recordings/mock-${file.originalname}`,
   storageProvider: 's3',
 }));
 
@@ -284,8 +284,8 @@ describe('file upload API', () => {
     const storedFile = await File.findById(response.body.file._id);
 
     expect(storedFile.fileName).toBe('deck.pdf');
-    expect(storedFile.fileUrl).toBe('https://cdn.example.test/meetify/meetings/FILE-123-API/files/mock-deck.pdf');
-    expect(storedFile.s3Key).toBe('meetify/meetings/FILE-123-API/files/mock-deck.pdf');
+    expect(storedFile.fileUrl).toBe('https://cdn.example.test/vync/meetings/FILE-123-API/files/mock-deck.pdf');
+    expect(storedFile.s3Key).toBe('vync/meetings/FILE-123-API/files/mock-deck.pdf');
     expect(mockUploadSharedFileToS3).toHaveBeenCalledWith(
       expect.objectContaining({ meetingId: 'FILE-123-API' }),
     );
@@ -325,7 +325,7 @@ describe('recording upload API', () => {
 
     expect(storedRecording.durationSeconds).toBe(42);
     expect(storedRecording.fileUrl).toBe(
-      'https://cdn.example.test/meetify/meetings/REC-123-API/recordings/mock-meeting.webm',
+      'https://cdn.example.test/vync/meetings/REC-123-API/recordings/mock-meeting.webm',
     );
     expect(storedRecording.storageProvider).toBe('s3');
     expect(mockUploadRecordingToS3).toHaveBeenCalledWith(

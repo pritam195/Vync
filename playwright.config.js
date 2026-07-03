@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frontendUrl = process.env.E2E_FRONTEND_URL || 'http://127.0.0.1:4173';
 const backendUrl = process.env.E2E_BACKEND_URL || 'http://127.0.0.1:5050';
-const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://127.0.0.1:27017/meetify_e2e_test';
+const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://127.0.0.1:27017/vync_e2e_test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -37,7 +37,7 @@ export default defineConfig({
         CLIENT_URL: frontendUrl,
         MONGO_URI: mongoUri,
         MONGO_URI_TEST: mongoUri,
-        JWT_SECRET: 'meetify-e2e-secret',
+        JWT_SECRET: 'vync-e2e-secret',
         JWT_EXPIRES_IN: '1h',
         JWT_COOKIE_EXPIRES_IN: '1',
         REDIS_URL: '',

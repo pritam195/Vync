@@ -1,6 +1,6 @@
-# Meetify Design System
+# Vync Design System
 
-Meetify uses a premium SaaS language inspired by Apple, Linear, Vercel, Notion, Arc Browser, and Framer: quiet surfaces, crisp hierarchy, restrained color, fast spring motion, and visible accessibility states.
+Vync uses a premium SaaS language inspired by Apple, Linear, Vercel, Notion, Arc Browser, and Framer: quiet surfaces, crisp hierarchy, restrained color, fast spring motion, and visible accessibility states.
 
 ## Foundations
 

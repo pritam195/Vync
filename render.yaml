@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: meetify-api
+    name: vync-api
     runtime: node
     rootDir: server
     plan: free
@@ -39,7 +39,7 @@ services:
         sync: false
 
   - type: web
-    name: meetify-client
+    name: vync-client
     env: static
     rootDir: client
     buildCommand: npm ci && npm run build

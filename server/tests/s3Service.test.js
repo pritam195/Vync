@@ -13,18 +13,18 @@ describe('s3Service', () => {
       timestamp: 123,
     });
 
-    expect(key).toBe('meetify/meetings/ABC-123-XYZ/files/123-Quarterly-Plan-Final.pdf');
+    expect(key).toBe('vync/meetings/ABC-123-XYZ/files/123-Quarterly-Plan-Final.pdf');
   });
 
   it('builds public URLs with encoded object key segments', () => {
     const url = buildS3PublicUrl({
-      bucket: 'meetify-uploads',
-      key: 'meetify/meetings/ABC-123-XYZ/files/123-demo file.pdf',
+      bucket: 'vync-uploads',
+      key: 'vync/meetings/ABC-123-XYZ/files/123-demo file.pdf',
       region: 'us-east-1',
     });
 
     expect(url).toBe(
-      'https://meetify-uploads.s3.us-east-1.amazonaws.com/meetify/meetings/ABC-123-XYZ/files/123-demo%20file.pdf',
+      'https://vync-uploads.s3.us-east-1.amazonaws.com/vync/meetings/ABC-123-XYZ/files/123-demo%20file.pdf',
     );
   });
 
@@ -33,7 +33,7 @@ describe('s3Service', () => {
     const uploader = createS3Uploader({
       env: {
         AWS_REGION: 'us-east-1',
-        AWS_S3_BUCKET: 'meetify-uploads',
+        AWS_S3_BUCKET: 'vync-uploads',
         AWS_S3_PUBLIC_BASE_URL: 'https://cdn.example.test',
       },
       s3Client: {
@@ -55,12 +55,12 @@ describe('s3Service', () => {
     });
 
     expect(sentCommands).toHaveLength(1);
-    expect(sentCommands[0].input.Bucket).toBe('meetify-uploads');
+    expect(sentCommands[0].input.Bucket).toBe('vync-uploads');
     expect(sentCommands[0].input.ContentType).toBe('application/pdf');
     expect(sentCommands[0].input.Metadata.originalfilename).toBe('deck.pdf');
     expect(result.storageProvider).toBe('s3');
-    expect(result.bucket).toBe('meetify-uploads');
-    expect(result.s3Key).toMatch(/^meetify\/meetings\/ABC-123-XYZ\/files\/\d+-deck\.pdf$/);
-    expect(result.fileUrl).toMatch(/^https:\/\/cdn\.example\.test\/meetify\/meetings\/ABC-123-XYZ\/files\/\d+-deck\.pdf$/);
+    expect(result.bucket).toBe('vync-uploads');
+    expect(result.s3Key).toMatch(/^vync\/meetings\/ABC-123-XYZ\/files\/\d+-deck\.pdf$/);
+    expect(result.fileUrl).toMatch(/^https:\/\/cdn\.example\.test\/vync\/meetings\/ABC-123-XYZ\/files\/\d+-deck\.pdf$/);
   });
 });

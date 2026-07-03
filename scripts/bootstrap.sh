@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Meetify VPS Bootstrap Script
+#  Vync VPS Bootstrap Script
 #  Run once on a fresh Ubuntu 22.04 VPS as root.
 #  Usage:  bash bootstrap.sh <your-domain> <your-email>
-#  Example: bash bootstrap.sh meetify.yourdomain.com admin@yourdomain.com
+#  Example: bash bootstrap.sh vync.yourdomain.com admin@yourdomain.com
 # =============================================================================
 set -euo pipefail
 
 DOMAIN="${1:?Usage: bash bootstrap.sh <domain> <email>}"
 EMAIL="${2:?Usage: bash bootstrap.sh <domain> <email>}"
-APP_DIR="/opt/meetify"
-APP_USER="meetify"
+APP_DIR="/opt/vync"
+APP_USER="vync"
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
-echo "║       Meetify VPS Bootstrap — $(date +%F)        ║"
+echo "║       Vync VPS Bootstrap — $(date +%F)        ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 
@@ -48,7 +48,7 @@ mkdir -p "$APP_DIR"
 usermod -aG docker "$APP_USER" 2>/dev/null || true
 
 # ── 6. Clone repository ───────────────────────────────────────────────────────
-echo "▶ Please enter your Git repository URL (e.g. https://github.com/user/meetify.git):"
+echo "▶ Please enter your Git repository URL (e.g. https://github.com/user/vync.git):"
 read -r REPO_URL
 if [ ! -d "$APP_DIR/.git" ]; then
   git clone "$REPO_URL" "$APP_DIR"
@@ -73,7 +73,7 @@ echo "   Firewall configured."
 
 # ── 8. Write Nginx reverse proxy config ───────────────────────────────────────
 echo "▶ Writing Nginx config for $DOMAIN..."
-cat > /etc/nginx/sites-available/meetify <<NGINX
+cat > /etc/nginx/sites-available/vync <<NGINX
 server {
     listen 80;
     server_name $DOMAIN;
@@ -121,7 +121,7 @@ server {
 }
 NGINX
 
-ln -sf /etc/nginx/sites-available/meetify /etc/nginx/sites-enabled/meetify
+ln -sf /etc/nginx/sites-available/vync /etc/nginx/sites-enabled/vync
 rm -f /etc/nginx/sites-enabled/default
 nginx -t
 
@@ -157,10 +157,10 @@ else
 fi
 
 # ── 11. Set up systemd service for auto-restart ───────────────────────────────
-echo "▶ Creating systemd service for Meetify..."
-cat > /etc/systemd/system/meetify.service <<SERVICE
+echo "▶ Creating systemd service for Vync..."
+cat > /etc/systemd/system/vync.service <<SERVICE
 [Unit]
-Description=Meetify Docker Compose App
+Description=Vync Docker Compose App
 Requires=docker.service
 After=docker.service network-online.target
 
@@ -177,8 +177,8 @@ WantedBy=multi-user.target
 SERVICE
 
 systemctl daemon-reload
-systemctl enable meetify
-echo "   Meetify systemd service registered (will auto-start on reboot)."
+systemctl enable vync
+echo "   Vync systemd service registered (will auto-start on reboot)."
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""

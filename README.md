@@ -1,10 +1,10 @@
-# Meetify
+# Vync
 
 [![Backend tests](https://img.shields.io/badge/backend%20tests-52%20passing-brightgreen)](#verification)
 [![Client tests](https://img.shields.io/badge/client%20tests-5%20passing-brightgreen)](#verification)
 [![E2E tests](https://img.shields.io/badge/e2e%20tests-2%20passing-brightgreen)](#verification)
 
-Meetify is a full-stack meeting app built with React, Vite, Tailwind CSS, Express, MongoDB, Mongoose, Socket.IO, and JWT authentication.
+Vync is a full-stack meeting app built with React, Vite, Tailwind CSS, Express, MongoDB, Mongoose, Socket.IO, and JWT authentication.
 
 It supports live video rooms, guest access, chat, screen sharing, whiteboard collaboration, shared files, collaborative code editing, host controls, meeting history, and optional recording uploads.
 
@@ -39,7 +39,7 @@ Screenshots are not committed in this repository yet. Capture the home page, pre
 
 ## Architecture Summary
 
-Meetify uses a React frontend for authenticated and guest meeting workflows, pre-join media controls, room UI, chat, file viewing, whiteboard drawing, code collaboration, and recording actions. The Express backend exposes REST endpoints for authentication, meeting lifecycle, history, chat retrieval, file metadata, and recording metadata. MongoDB is the durable persistence layer for users, meetings, chat, files, recordings, and activity logs.
+Vync uses a React frontend for authenticated and guest meeting workflows, pre-join media controls, room UI, chat, file viewing, whiteboard drawing, code collaboration, and recording actions. The Express backend exposes REST endpoints for authentication, meeting lifecycle, history, chat retrieval, file metadata, and recording metadata. MongoDB is the durable persistence layer for users, meetings, chat, files, recordings, and activity logs.
 
 Socket.IO coordinates realtime room membership, waiting-room decisions, moderation, chat delivery, shared file state, whiteboard updates, code editor sync, recording status, and WebRTC signaling. Redis stores active room state with expiring keys so reconnecting participants can recover transient state without making MongoDB responsible for fast-changing room data. WebRTC carries peer media directly between browsers when possible; TURN is configured as an ICE fallback for restrictive networks. S3 stores uploaded files and recordings in production, while Docker Compose can run a local fallback stack with MongoDB, Redis, coturn, the API server, and an Nginx-served React build.
 
@@ -84,7 +84,7 @@ To measure runtime performance, add load tests for REST endpoints, Socket.IO roo
 ## Project Structure
 
 ```text
-Meetify/
+Vync/
   client/                 React app
     src/components/       Shared and meeting-specific components
     src/context/          Auth, toast, and theme providers
@@ -129,7 +129,7 @@ VITE_TURN_USERNAME=your-turn-username
 VITE_TURN_CREDENTIAL=your-turn-password
 ```
 
-`VITE_STUN_URL` and `VITE_TURN_URL` accept comma-separated values. If the TURN URL or credentials are missing, Meetify falls back to STUN-only ICE configuration so local development still works.
+`VITE_STUN_URL` and `VITE_TURN_URL` accept comma-separated values. If the TURN URL or credentials are missing, Vync falls back to STUN-only ICE configuration so local development still works.
 
 Server:
 
@@ -137,7 +137,7 @@ Server:
 NODE_ENV=development
 PORT=5000
 CLIENT_URL=http://localhost:5173
-MONGO_URI=mongodb://127.0.0.1:27017/meetify
+MONGO_URI=mongodb://127.0.0.1:27017/vync
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_EXPIRES_IN=7d
@@ -147,8 +147,8 @@ LOCAL_UPLOADS_ENABLED=false
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=replace-with-access-key-id
 AWS_SECRET_ACCESS_KEY=replace-with-secret-access-key
-AWS_S3_BUCKET=meetify-uploads
-AWS_S3_PUBLIC_BASE_URL=https://meetify-uploads.s3.us-east-1.amazonaws.com
+AWS_S3_BUCKET=vync-uploads
+AWS_S3_PUBLIC_BASE_URL=https://vync-uploads.s3.us-east-1.amazonaws.com
 ```
 
 `CLIENT_URL` accepts a comma-separated list when multiple frontend origins need CORS access.
@@ -156,7 +156,7 @@ In development, the server falls back to `redis://localhost:6379` when `REDIS_UR
 
 ### Upload Storage
 
-Meetify stores shared files and recording uploads in S3 when `STORAGE_PROVIDER=s3`. Uploaded MongoDB documents keep the existing `fileUrl` field as the frontend-facing URL and may also include `storageProvider`, `s3Key`, `bucket`, and `publicUrl`.
+Vync stores shared files and recording uploads in S3 when `STORAGE_PROVIDER=s3`. Uploaded MongoDB documents keep the existing `fileUrl` field as the frontend-facing URL and may also include `storageProvider`, `s3Key`, `bucket`, and `publicUrl`.
 
 For local development without S3, set:
 
@@ -179,7 +179,7 @@ The S3 bucket must either allow public reads for uploaded objects or be fronted 
         "s3:PutObject",
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/meetify/*"
+      "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/vync/*"
     }
   ]
 }
@@ -202,18 +202,18 @@ npm run dev
 Run Redis locally before starting meetings:
 
 ```bash
-docker run --name meetify-redis -p 6379:6379 redis:7-alpine
+docker run --name vync-redis -p 6379:6379 redis:7-alpine
 ```
 
 If the container already exists:
 
 ```bash
-docker start meetify-redis
+docker start vync-redis
 ```
 
 ### TURN Server With coturn
 
-Production WebRTC needs TURN for users behind restrictive NATs, corporate networks, or mobile carriers. Meetify reads TURN details from the client Vite environment and passes them to `RTCPeerConnection`; Socket.IO signaling event names and flow stay unchanged.
+Production WebRTC needs TURN for users behind restrictive NATs, corporate networks, or mobile carriers. Vync reads TURN details from the client Vite environment and passes them to `RTCPeerConnection`; Socket.IO signaling event names and flow stay unchanged.
 
 Install coturn on an Ubuntu server:
 
@@ -323,7 +323,7 @@ Docker URLs:
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000/api`
-- MongoDB: `mongodb://localhost:27017/meetify`
+- MongoDB: `mongodb://localhost:27017/vync`
 - Redis: `redis://localhost:6379`
 - TURN: `turn:localhost:3478`
 
@@ -334,8 +334,8 @@ VITE_API_URL=/api
 VITE_SOCKET_URL=http://localhost:5173
 VITE_STUN_URL=stun:stun.l.google.com:19302
 VITE_TURN_URL=turn:localhost:3478
-VITE_TURN_USERNAME=meetify
-VITE_TURN_CREDENTIAL=meetify-turn-password
+VITE_TURN_USERNAME=vync
+VITE_TURN_CREDENTIAL=vync-turn-password
 ```
 
 Nginx serves the Vite build, falls back to `index.html` for React Router refreshes, and proxies `/api` plus `/socket.io` to the `server` service.
@@ -343,7 +343,7 @@ Nginx serves the Vite build, falls back to `index.html` for React Router refresh
 The server container uses:
 
 ```env
-MONGO_URI=mongodb://mongo:27017/meetify
+MONGO_URI=mongodb://mongo:27017/vync
 REDIS_URL=redis://redis:6379
 CLIENT_URL=http://localhost:5173
 STORAGE_PROVIDER=local
@@ -351,7 +351,7 @@ LOCAL_UPLOADS_ENABLED=true
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=replace-with-access-key-id
 AWS_SECRET_ACCESS_KEY=replace-with-secret-access-key
-AWS_S3_BUCKET=meetify-uploads
+AWS_S3_BUCKET=vync-uploads
 AWS_S3_PUBLIC_BASE_URL=
 ```
 
@@ -383,7 +383,7 @@ To check TURN locally:
 docker compose logs coturn
 ```
 
-Join a meeting in development and check the browser console for `[Meetify WebRTC] selected ICE candidate`. Candidate type `relay` means TURN is being used. For real cross-network TURN testing, set `TURN_EXTERNAL_IP` to the public IP of the machine running coturn and use a reachable domain/IP in `VITE_TURN_URL`.
+Join a meeting in development and check the browser console for `[Vync WebRTC] selected ICE candidate`. Candidate type `relay` means TURN is being used. For real cross-network TURN testing, set `TURN_EXTERNAL_IP` to the public IP of the machine running coturn and use a reachable domain/IP in `VITE_TURN_URL`.
 
 Docker troubleshooting:
 
@@ -441,7 +441,7 @@ Backend API tests run with Jest and Supertest. Copy `server/.env.test.example` t
 Copy-Item server\.env.test.example server\.env.test
 ```
 
-The test setup connects only to `MONGO_URI_TEST` or a MongoDB database whose name contains `test` or `jest`; by default it uses `mongodb://127.0.0.1:27017/meetify_test`. Collections are cleared before and after each test, and S3 upload calls are mocked so tests never require real AWS credentials or buckets. Redis is not required for the API tests.
+The test setup connects only to `MONGO_URI_TEST` or a MongoDB database whose name contains `test` or `jest`; by default it uses `mongodb://127.0.0.1:27017/vync_test`. Collections are cleared before and after each test, and S3 upload calls are mocked so tests never require real AWS credentials or buckets. Redis is not required for the API tests.
 
 Run only the Socket.IO integration tests:
 
@@ -463,7 +463,7 @@ Interactive Playwright UI:
 npm run test:e2e:ui
 ```
 
-The Playwright config starts the backend on `http://127.0.0.1:5050` and serves the built frontend on `http://127.0.0.1:4173`. It uses `mongodb://127.0.0.1:27017/meetify_e2e_test` by default, local upload storage, fake browser media devices, and no real AWS S3 or production services. Override with `E2E_FRONTEND_URL`, `E2E_BACKEND_URL`, or `MONGO_URI_TEST` when needed. If browsers have not been installed on a machine yet, run:
+The Playwright config starts the backend on `http://127.0.0.1:5050` and serves the built frontend on `http://127.0.0.1:4173`. It uses `mongodb://127.0.0.1:27017/vync_e2e_test` by default, local upload storage, fake browser media devices, and no real AWS S3 or production services. Override with `E2E_FRONTEND_URL`, `E2E_BACKEND_URL`, or `MONGO_URI_TEST` when needed. If browsers have not been installed on a machine yet, run:
 
 ```bash
 npx playwright install chromium
@@ -483,8 +483,8 @@ To confirm TURN is being used:
 
 1. Start the app with `VITE_TURN_URL`, `VITE_TURN_USERNAME`, and `VITE_TURN_CREDENTIAL` set.
 2. Open two browsers or devices on different networks and join the same meeting.
-3. In development mode, check the browser console for `[Meetify WebRTC] selected ICE candidate`. A `type` of `relay` means TURN is being used. `srflx` means STUN discovered a server-reflexive route, and `host` means direct local connectivity.
-4. In Chrome, open `chrome://webrtc-internals`, select the Meetify peer connection, and inspect the selected candidate pair. The local candidate type should show `relay` when TURN is selected.
+3. In development mode, check the browser console for `[Vync WebRTC] selected ICE candidate`. A `type` of `relay` means TURN is being used. `srflx` means STUN discovered a server-reflexive route, and `host` means direct local connectivity.
+4. In Chrome, open `chrome://webrtc-internals`, select the Vync peer connection, and inspect the selected candidate pair. The local candidate type should show `relay` when TURN is selected.
 
 Common WebRTC troubleshooting:
 
@@ -688,7 +688,7 @@ Manual Redis room-state check:
 
 ## Recording Notes
 
-Meeting recording uses the browser `MediaRecorder` API with display capture. The host should select the Meetify tab or meeting window when prompted so the recording includes the video grid, whiteboard, code editor, shared files, and side panels.
+Meeting recording uses the browser `MediaRecorder` API with display capture. The host should select the Vync tab or meeting window when prompted so the recording includes the video grid, whiteboard, code editor, shared files, and side panels.
 
 Recordings are not uploaded automatically. This avoids unnecessary cloud storage use.
 
@@ -753,8 +753,8 @@ LOCAL_UPLOADS_ENABLED=false
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=replace-with-access-key-id
 AWS_SECRET_ACCESS_KEY=replace-with-secret-access-key
-AWS_S3_BUCKET=meetify-uploads
-AWS_S3_PUBLIC_BASE_URL=https://meetify-uploads.s3.us-east-1.amazonaws.com
+AWS_S3_BUCKET=vync-uploads
+AWS_S3_PUBLIC_BASE_URL=https://vync-uploads.s3.us-east-1.amazonaws.com
 ```
 
 When deployment URLs change, update provider environment variables instead of changing code:
@@ -800,7 +800,7 @@ In development, server stack traces are included. In production, stack traces ar
 
 Redis holds fast-changing active room state such as participants, waiting-room entries, shared-file state, whiteboard strokes, code editor state, and recording status. MongoDB remains the durable source for users, meeting history, chat, files, recordings, and activity logs. This keeps high-churn realtime state out of the primary database and lets room state expire automatically.
 
-2. How does WebRTC media flow through Meetify?
+2. How does WebRTC media flow through Vync?
 
 Socket.IO is used for signaling only: clients exchange `offer`, `answer`, and `ice-candidate` messages through the server. After ICE negotiation, media flows directly between browsers when possible. If direct connectivity fails, configured TURN servers relay the media. The Express backend does not process audio or video streams.
 
@@ -818,7 +818,7 @@ The main scaling step would be adding an SFU for media routing because peer-to-p
 
 ## Resume-Ready Description
 
-Meetify is a production-oriented MERN video meeting platform that combines React, Express, MongoDB, Socket.IO, Redis, WebRTC, S3, TURN, and Docker. It supports authenticated and guest meetings, realtime chat, screen sharing, whiteboard collaboration, shared files, collaborative code editing, host moderation, meeting history, and optional recording uploads, with Redis-backed active room state and MongoDB-backed durable history.
+Vync is a production-oriented MERN video meeting platform that combines React, Express, MongoDB, Socket.IO, Redis, WebRTC, S3, TURN, and Docker. It supports authenticated and guest meetings, realtime chat, screen sharing, whiteboard collaboration, shared files, collaborative code editing, host moderation, meeting history, and optional recording uploads, with Redis-backed active room state and MongoDB-backed durable history.
 
 ## Development Notes
 

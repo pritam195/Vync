@@ -62,21 +62,21 @@ describe('upload metadata', () => {
       },
       meetingId: 'ABC-123-XYZ',
       storageResult: {
-        bucket: 'meetify-uploads',
-        fileUrl: 'https://cdn.example.test/meetify/meetings/ABC-123-XYZ/files/1-deck.pdf',
-        publicUrl: 'https://cdn.example.test/meetify/meetings/ABC-123-XYZ/files/1-deck.pdf',
-        s3Key: 'meetify/meetings/ABC-123-XYZ/files/1-deck.pdf',
+        bucket: 'vync-uploads',
+        fileUrl: 'https://cdn.example.test/vync/meetings/ABC-123-XYZ/files/1-deck.pdf',
+        publicUrl: 'https://cdn.example.test/vync/meetings/ABC-123-XYZ/files/1-deck.pdf',
+        s3Key: 'vync/meetings/ABC-123-XYZ/files/1-deck.pdf',
         storageProvider: 's3',
       },
       uploadedBy: { name: 'Ada', socketId: 'socket-1', userId: 'user-1' },
     });
 
-    expect(document.fileUrl).toBe('https://cdn.example.test/meetify/meetings/ABC-123-XYZ/files/1-deck.pdf');
+    expect(document.fileUrl).toBe('https://cdn.example.test/vync/meetings/ABC-123-XYZ/files/1-deck.pdf');
     expect(document.fileName).toBe('deck.pdf');
     expect(document.fileType).toBe('application/pdf');
     expect(document.size).toBe(1234);
     expect(document.storageProvider).toBe('s3');
-    expect(document.s3Key).toBe('meetify/meetings/ABC-123-XYZ/files/1-deck.pdf');
+    expect(document.s3Key).toBe('vync/meetings/ABC-123-XYZ/files/1-deck.pdf');
   });
 
   it('normalizes recording duration metadata', () => {

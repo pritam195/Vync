@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  Meetify Deploy Update Script
+#  Vync Deploy Update Script
 #  Run this on your VPS to pull the latest code and redeploy with zero downtime.
 #  Usage: bash scripts/deploy.sh
 # =============================================================================
 set -euo pipefail
 
-APP_DIR="/opt/meetify"
+APP_DIR="/opt/vync"
 cd "$APP_DIR"
 
 echo ""
-echo "🚀 Meetify — Deploying update at $(date)"
+echo "🚀 Vync — Deploying update at $(date)"
 echo "────────────────────────────────────────"
 
 # Pull latest code

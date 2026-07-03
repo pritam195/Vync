@@ -44,7 +44,7 @@ async function openPanel(page, panel) {
   await expect(page.getByTestId(`meeting-panel-${panel}`)).toBeVisible();
 }
 
-test.describe('Meetify E2E core flows', () => {
+test.describe('Vync E2E core flows', () => {
   test('registers a user and logs in with the same account', async ({ page, context }) => {
     const user = {
       name: 'E2E Ada',

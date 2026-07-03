@@ -8,8 +8,8 @@ services:
         VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:5173}
         VITE_STUN_URL: ${VITE_STUN_URL:-stun:stun.l.google.com:19302}
         VITE_TURN_URL: ${VITE_TURN_URL:-turn:localhost:3478}
-        VITE_TURN_USERNAME: ${VITE_TURN_USERNAME:-meetify}
-        VITE_TURN_CREDENTIAL: ${VITE_TURN_CREDENTIAL:-meetify-turn-password}
+        VITE_TURN_USERNAME: ${VITE_TURN_USERNAME:-vync}
+        VITE_TURN_CREDENTIAL: ${VITE_TURN_CREDENTIAL:-vync-turn-password}
     depends_on:
       server:
         condition: service_healthy
@@ -30,7 +30,7 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-5000}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
-      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/meetify}
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/vync}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET:-replace-with-a-long-random-secret}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
@@ -40,7 +40,7 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-replace-with-access-key-id}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-replace-with-secret-access-key}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-meetify-uploads}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-vync-uploads}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
     depends_on:
       mongo:
@@ -97,7 +97,7 @@ services:
       - --lt-cred-mech
       - --realm=${TURN_REALM:-localhost}
       - --server-name=${TURN_REALM:-localhost}
-      - --user=${TURN_USERNAME:-meetify}:${TURN_PASSWORD:-meetify-turn-password}
+      - --user=${TURN_USERNAME:-vync}:${TURN_PASSWORD:-vync-turn-password}
       - --external-ip=${TURN_EXTERNAL_IP:-127.0.0.1}
       - --min-port=49152
       - --max-port=49200

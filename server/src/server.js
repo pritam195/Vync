@@ -24,7 +24,7 @@ async function startServer() {
   await getRedisClient();
 
   server.listen(port, () => {
-    console.log(`Meetify server running on port ${port}`);
+    console.log(`Vync server running on port ${port}`);
   });
 }
 

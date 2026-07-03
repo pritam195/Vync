@@ -1,17 +1,17 @@
-# Meetify Project Report
+# Vync Project Report
 
 Prepared on: June 30, 2026
 
-Project name: Meetify  
+Project name: Vync  
 Project type: Full-stack web application  
 Domain: Online meetings and real-time collaboration  
 Architecture: MERN stack with WebRTC and Socket.IO
 
 ## Abstract
 
-Meetify is a full-stack online meeting and collaboration platform designed to support real-time video communication, guest joining, meeting management, chat, file sharing, whiteboard collaboration, collaborative code editing, screen sharing, recording uploads, and meeting history. The system uses React and Vite for the frontend, Node.js and Express for the backend, MongoDB with Mongoose for persistence, Socket.IO for real-time room coordination, and WebRTC for peer-to-peer audio/video communication.
+Vync is a full-stack online meeting and collaboration platform designed to support real-time video communication, guest joining, meeting management, chat, file sharing, whiteboard collaboration, collaborative code editing, screen sharing, recording uploads, and meeting history. The system uses React and Vite for the frontend, Node.js and Express for the backend, MongoDB with Mongoose for persistence, Socket.IO for real-time room coordination, and WebRTC for peer-to-peer audio/video communication.
 
-The project aims to provide a browser-based alternative to conventional meeting tools while adding collaboration-focused features such as a shared whiteboard and code editor. Meetify supports authenticated users as well as guest participants, making it suitable for team meetings, online learning, interviews, project discussions, and technical collaboration sessions.
+The project aims to provide a browser-based alternative to conventional meeting tools while adding collaboration-focused features such as a shared whiteboard and code editor. Vync supports authenticated users as well as guest participants, making it suitable for team meetings, online learning, interviews, project discussions, and technical collaboration sessions.
 
 ## Table of Contents
 
@@ -40,17 +40,17 @@ The project aims to provide a browser-based alternative to conventional meeting 
 
 Online meetings have become a core part of education, business, software development, interviews, and remote collaboration. Many existing meeting tools focus mainly on video and audio communication, while teams often need multiple additional tools for chat, document sharing, whiteboarding, code review, and session history.
 
-Meetify combines these meeting and collaboration features into one web application. It allows users to create or join meeting rooms, communicate through video and audio, exchange messages, share files, collaborate on a whiteboard, edit code together, and view meeting history after a session. The application is built as a modern single-page React frontend connected to an Express and MongoDB backend.
+Vync combines these meeting and collaboration features into one web application. It allows users to create or join meeting rooms, communicate through video and audio, exchange messages, share files, collaborate on a whiteboard, edit code together, and view meeting history after a session. The application is built as a modern single-page React frontend connected to an Express and MongoDB backend.
 
 ## 2. Problem Statement
 
 Remote users need a reliable way to conduct live meetings while also collaborating through chat, shared files, whiteboards, code editing, and meeting records. Using separate tools for each activity can reduce productivity, increase context switching, and make it difficult to preserve meeting artifacts.
 
-The problem addressed by Meetify is the development of a unified browser-based meeting platform that supports real-time communication, collaboration tools, participant controls, and persistent meeting history in a single application.
+The problem addressed by Vync is the development of a unified browser-based meeting platform that supports real-time communication, collaboration tools, participant controls, and persistent meeting history in a single application.
 
 ## 3. Objectives
 
-The main objectives of Meetify are:
+The main objectives of Vync are:
 
 - Provide secure user registration, login, logout, and session handling.
 - Allow authenticated users and guests to create and join meetings.
@@ -68,7 +68,7 @@ The main objectives of Meetify are:
 
 ## 4. Scope
 
-Meetify focuses on browser-based meeting collaboration. The implemented scope includes:
+Vync focuses on browser-based meeting collaboration. The implemented scope includes:
 
 - Frontend web interface for home, authentication, dashboard, guest join, live meeting, meeting history, and meeting details.
 - REST APIs for authentication, meetings, chat history, file uploads, recording uploads, and user profile access.
@@ -87,7 +87,7 @@ Out of scope for the current implementation:
 
 ## 5. Proposed System
 
-Meetify proposes a single integrated system where users can:
+Vync proposes a single integrated system where users can:
 
 - Create instant or scheduled meetings.
 - Join meetings with an account or as a guest.
@@ -139,7 +139,7 @@ The system uses a client-server model for application data and signaling. Media 
 
 ## 7. System Architecture
 
-Meetify follows a layered full-stack architecture.
+Vync follows a layered full-stack architecture.
 
 ```mermaid
 flowchart TD
@@ -300,7 +300,7 @@ File upload restrictions include allowed document and image formats, with a 25 M
 
 ## 11. Database Design
 
-Meetify uses MongoDB collections through Mongoose schemas.
+Vync uses MongoDB collections through Mongoose schemas.
 
 ### User Collection
 
@@ -557,7 +557,7 @@ Server:
 NODE_ENV=development
 PORT=5000
 CLIENT_URL=http://localhost:5173
-MONGO_URI=mongodb://127.0.0.1:27017/meetify
+MONGO_URI=mongodb://127.0.0.1:27017/vync
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_EXPIRES_IN=7d
 JWT_COOKIE_EXPIRES_IN=7
@@ -615,7 +615,7 @@ Recommended future improvements:
 
 ## 19. Conclusion
 
-Meetify successfully demonstrates a complete real-time meeting and collaboration platform using modern web technologies. It combines user authentication, meeting creation, WebRTC audio/video, Socket.IO-based collaboration, chat, file sharing, whiteboard, code editing, recording uploads, and meeting history in a single full-stack application.
+Vync successfully demonstrates a complete real-time meeting and collaboration platform using modern web technologies. It combines user authentication, meeting creation, WebRTC audio/video, Socket.IO-based collaboration, chat, file sharing, whiteboard, code editing, recording uploads, and meeting history in a single full-stack application.
 
 The project is organized clearly across frontend and backend layers, making it maintainable and extensible. While the current implementation is suitable for development, demonstrations, and small group collaboration, future improvements such as TURN/SFU support, cloud storage, automated testing, and production-grade security controls would make it stronger for large-scale deployment.
 
@@ -624,7 +624,7 @@ The project is organized clearly across frontend and backend layers, making it m
 ### Project Structure
 
 ```text
-Meetify/
+Vync/
   client/
     public/
       images/

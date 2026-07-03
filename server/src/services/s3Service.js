@@ -34,7 +34,7 @@ export function createS3ObjectKey({ category, meetingId, originalName, timestamp
   const normalizedMeetingId = normalizeMeetingId(meetingId) || 'unknown';
   const safeName = safeFileName(originalName || category);
 
-  return `meetify/meetings/${normalizedMeetingId}/${category}/${timestamp}-${safeName}`;
+  return `vync/meetings/${normalizedMeetingId}/${category}/${timestamp}-${safeName}`;
 }
 
 export function buildS3PublicUrl({ bucket, key, publicBaseUrl, region }) {

@@ -1,5 +1,5 @@
 {
-  "name": "meetify-server",
+  "name": "vync-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -22,7 +22,8 @@
     "mongoose": "^8.18.2",
     "multer": "^2.2.0",
     "redis": "^6.0.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "vync": "file:.."
   },
   "devDependencies": {
     "jest": "^30.4.2",
