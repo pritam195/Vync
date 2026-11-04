@@ -84,41 +84,41 @@ Socket.IO coordinates realtime room membership, waiting-room decisions, moderati
 
 ```mermaid
 flowchart TD
-  subgraph ClientTier["Client Tier (React 19 / Vite)"]
+  subgraph ClientTier["Client Tier: React 19 / Vite"]
     UI["React UI & Monaco Editor"]
     MSClient["mediasoup-client WebRTC"]
-    RecClient["MediaRecorder (2s Timeslice Chunker)"]
+    RecClient["MediaRecorder: 2s Timeslice Chunker"]
     YjsClient["Yjs CRDT & Canvas Whiteboard"]
   end
 
-  subgraph SignalingTier["Signaling & Coordination (Node.js / Express 5)"]
+  subgraph SignalingTier["Signaling & Coordination: Express 5"]
     Express["Express REST API & /metrics"]
-    SocketIO["Socket.IO Server (Role Auth)"]
-    RedisStore["Redis 7 (TTL Room State & Clustering)"]
+    SocketIO["Socket.IO Server: Role Auth"]
+    RedisStore["Redis 7: TTL Room State & Clustering"]
   end
 
-  subgraph SFUTier["Media SFU Tier (mediasoup C++ Worker Pool)"]
-    Worker0["Mediasoup Worker #0<br/>(Router A)"]
-    Worker1["Mediasoup Worker #1<br/>(Router B)"]
-    Pipe["PipeTransport (Cross-Worker Media Routing)"]
-    Worker0 <-->|RTP Pipe| Pipe
-    Pipe <-->|RTP Pipe| Worker1
+  subgraph SFUTier["Media SFU Tier: mediasoup C++ Worker Pool"]
+    Worker0["Mediasoup Worker 0: Router A"]
+    Worker1["Mediasoup Worker 1: Router B"]
+    Pipe["PipeTransport: Cross-Worker Media Routing"]
+    Worker0 <-->|"RTP Pipe"| Pipe
+    Pipe <-->|"RTP Pipe"| Worker1
   end
 
   subgraph PersistenceTier["Persistence & Object Storage"]
-    Mongo["MongoDB<br/>(Durable Users, Meetings, Chat, History)"]
-    S3["AWS S3 / Local Fallback<br/>(WebM Recording Chunks, Shared Files)"]
+    Mongo["MongoDB: Durable Users, Meetings, Chat, History"]
+    S3["AWS S3 / Local Fallback: WebM Recording Chunks, Shared Files"]
   end
 
-  UI -->|REST API / HTTP-only JWT| Express
-  SocketIO <-->|Pub/Sub & Room State Cache| RedisStore
-  UI <-->|Signaling & Room Events| SocketIO
-  YjsClient <-->|CRDT Sync & Whiteboard Broadcast| SocketIO
-  MSClient <-->|WebRTC RTP (Send/Recv Transports)| Worker0
-  MSClient <-->|WebRTC RTP (Send/Recv Transports)| Worker1
-  RecClient -->|POST /chunk & /recover| Express
-  Express -->|Mongoose ODM| Mongo
-  Express -->|PutObject / Multipart Manifest| S3
+  UI -->|"REST API / HTTP-only JWT"| Express
+  SocketIO <-->|"Pub/Sub & Room State Cache"| RedisStore
+  UI <-->|"Signaling & Room Events"| SocketIO
+  YjsClient <-->|"CRDT Sync & Whiteboard Broadcast"| SocketIO
+  MSClient <-->|"WebRTC RTP Send and Recv"| Worker0
+  MSClient <-->|"WebRTC RTP Send and Recv"| Worker1
+  RecClient -->|"POST /chunk & /recover"| Express
+  Express -->|"Mongoose ODM"| Mongo
+  Express -->|"PutObject / Multipart Manifest"| S3
 ```
 
 - **Client Tier**: React 19 UI with Monaco code editor, `mediasoup-client` WebRTC device management, `MediaRecorder` 2000 ms timeslice incremental chunker, and Yjs CRDT synchronization.
