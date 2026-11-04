@@ -130,6 +130,26 @@ describe('auth API', () => {
 
     expect(response.body.message).toBe('Not authorized');
   });
+
+  it('validates input for forgot-password, verify-otp, and reset-password', async () => {
+    const res1 = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({})
+      .expect(400);
+    expect(res1.body.message).toBe('Email is required');
+
+    const res2 = await request(app)
+      .post('/api/auth/verify-otp')
+      .send({ email: 'test@example.com' })
+      .expect(400);
+    expect(res2.body.message).toBe('Email and OTP are required');
+
+    const res3 = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ email: 'test@example.com', otp: '123456', password: '123' })
+      .expect(400);
+    expect(res3.body.message).toBe('Password must be at least 6 characters');
+  });
 });
 
 describe('meetings API', () => {

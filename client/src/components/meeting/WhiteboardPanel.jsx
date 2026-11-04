@@ -94,7 +94,13 @@ function WhiteboardPanel({
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
     const context = canvas.getContext('2d');
+    if (!context) {
+      return;
+    }
     const ratio = window.devicePixelRatio || 1;
 
     canvas.width = boardWidth * ratio;

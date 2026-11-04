@@ -5,6 +5,7 @@ import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import { useEffect, useRef, useState } from 'react';
+import { MonacoBinding } from 'y-monaco';
 import { SlidersHorizontal, X } from 'lucide-react';
 
 self.MonacoEnvironment = {
@@ -77,12 +78,14 @@ function downloadTextFile(content, fileName) {
 }
 
 function CodeEditorPanel({
+  awareness,
   codeEditorState,
   localSocketId,
   meetingId,
   onCodeChange,
   onCursorPosition,
   onLanguageChange,
+  yDoc,
 }) {
   const containerRef = useRef(null);
   const editorRef = useRef(null);
@@ -123,6 +126,20 @@ function CodeEditorPanel({
 
     editorRef.current = editor;
 
+    let binding = null;
+    if (yDoc && awareness) {
+      const yText = yDoc.getText('monaco');
+      if (yText.length === 0 && initialCodeRef.current) {
+        yText.insert(0, initialCodeRef.current);
+      }
+      binding = new MonacoBinding(
+        yText,
+        editor.getModel(),
+        new Set([editor]),
+        awareness,
+      );
+    }
+
     const contentSubscription = editor.onDidChangeModelContent(() => {
       if (ignoreNextChangeRef.current) {
         ignoreNextChangeRef.current = false;
@@ -147,15 +164,19 @@ function CodeEditorPanel({
     });
 
     return () => {
+      if (binding) {
+        binding.destroy();
+      }
       window.clearTimeout(cursorTimerRef.current);
       contentSubscription.dispose();
       cursorSubscription.dispose();
       editor.dispose();
       editorRef.current = null;
     };
-  }, [codeEditorState.code, codeEditorState.language, isReady, onCodeChange, onCursorPosition]);
+  }, [awareness, codeEditorState.code, codeEditorState.language, isReady, onCodeChange, onCursorPosition, yDoc]);
 
   useEffect(() => {
+    if (yDoc) return;
     const editor = editorRef.current;
 
     if (!editor || editor.getValue() === codeEditorState.code) {
@@ -163,8 +184,28 @@ function CodeEditorPanel({
     }
 
     ignoreNextChangeRef.current = true;
-    editor.setValue(codeEditorState.code);
-  }, [codeEditorState.code]);
+    const model = editor.getModel();
+    if (model) {
+      const position = editor.getPosition();
+      const selection = editor.getSelection();
+      editor.executeEdits('remote-change', [
+        {
+          range: model.getFullModelRange(),
+          text: codeEditorState.code,
+          forceMoveMarkers: true,
+        },
+      ]);
+      editor.pushUndoStop();
+      if (position) {
+        editor.setPosition(position);
+      }
+      if (selection) {
+        editor.setSelection(selection);
+      }
+    } else {
+      editor.setValue(codeEditorState.code);
+    }
+  }, [codeEditorState.code, yDoc]);
 
   useEffect(() => {
     languageRef.current = codeEditorState.language;

@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-11-04T11:15:11.329Z",
+  "status": "PASS",
+  "prometheusEndpoint": "/metrics",
+  "jsonEndpoint": "/api/health/metrics",
+  "metricsCount": 10,
+  "metricsVerified": [
+    "vync_active_rooms",
+    "vync_active_participants",
+    "vync_sfu_workers_total",
+    "vync_sfu_transports",
+    "vync_sfu_producers",
+    "vync_sfu_consumers",
+    "vync_socket_events_total",
+    "vync_socket_connected_clients",
+    "vync_redis_ping_latency_ms",
+    "vync_redis_connected"
+  ],
+  "sampleValues": {
+    "vync_active_rooms": "1",
+    "vync_active_participants": "19",
+    "vync_sfu_workers_total": "2",
+    "vync_sfu_transports": "0",
+    "vync_sfu_producers": "0",
+    "vync_sfu_consumers": "0",
+    "vync_socket_events_total": "present",
+    "vync_socket_connected_clients": "0",
+    "vync_redis_ping_latency_ms": "0.89",
+    "vync_redis_connected": "1"
+  },
+  "sfuWorkers": 2,
+  "activeRooms": 1,
+  "redisPingMs": 0.89,
+  "redisConnected": 1
+}

@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-11-04T11:02:00.684Z",
+  "meetingId": "REC-BN8B-758",
+  "recordingId": "rec_1793790120585_crash_test",
+  "status": "PASS",
+  "totalChunksGenerated": 5,
+  "chunksUploadedBeforeCrash": 3,
+  "chunksRecovered": 3,
+  "untransmittedChunks": 2,
+  "rawBytesRecovered": 327680,
+  "ebmlHeaderValid": true,
+  "recoveryDurationMs": 33,
+  "recoveredFile": "recovered-rec_1793790120585_crash_test.webm",
+  "recoveredFileUrl": "/uploads/recordings/REC-BN8B-758/rec_1793790120585_crash_test/recovered-rec_1793790120585_crash_test.webm"
+}

@@ -9,6 +9,24 @@ import roomStateService, {
 } from '../services/roomStateService.js';
 import { logActivity } from '../utils/activityLog.js';
 import { normalizeMeetingId as normalizeRoomId } from '../utils/normalizeMeetingId.js';
+import mediasoupManager from '../sfu/mediasoupManager.js';
+import { recoverAllUnfinishedRecordings } from '../services/recordingChunkService.js';
+import * as Y from 'yjs';
+import { recordSocketConnection, recordSocketDisconnection, recordSocketEvent } from '../services/metricsService.js';
+
+const roomYDocs = new Map();
+
+function getOrCreateRoomYDoc(roomId, initialCode = '') {
+  let doc = roomYDocs.get(roomId);
+  if (!doc) {
+    doc = new Y.Doc();
+    if (initialCode) {
+      doc.getText('monaco').insert(0, initialCode);
+    }
+    roomYDocs.set(roomId, doc);
+  }
+  return doc;
+}
 
 async function getRoom(roomId) {
   const normalizedRoomId = normalizeRoomId(roomId);
@@ -272,18 +290,36 @@ async function removeSocketFromRooms(io, socket) {
   const roomId = normalizeRoomId(socket.data.roomId);
 
   if (roomId) {
+    mediasoupManager.handleSocketDisconnect(roomId, socket.id);
     const participant = await roomStateService.removeParticipant(roomId, socket.id);
+
+    try {
+      const codeState = await roomStateService.getCodeEditorState(roomId);
+      if (codeState?.cursors && codeState.cursors[socket.id]) {
+        const nextCursors = { ...codeState.cursors };
+        delete nextCursors[socket.id];
+        await roomStateService.updateCodeEditorState(roomId, {
+          ...codeState,
+          cursors: nextCursors,
+        });
+      }
+    } catch (cursorError) {
+      console.error('Could not clean up code editor cursor:', cursorError);
+    }
 
     if (participant) {
       socket.to(roomId).emit('user-left', participant);
 
       const remainingParticipants = await getParticipants(roomId);
       if (remainingParticipants.length === 0) {
+        roomYDocs.delete(roomId);
         await roomStateService.expireRoomState(roomId);
       } else {
         await emitParticipants(io, roomId);
       }
     }
+    socket.leave(roomId);
+    socket.data.roomId = '';
   }
 
   const waitingRoomId = normalizeRoomId(socket.data.waitingRoomId);
@@ -296,6 +332,8 @@ async function removeSocketFromRooms(io, socket) {
     if (waitingParticipant) {
       await emitWaitingRoom(io, waitingRoomId);
     }
+    socket.leave(waitingRoomId);
+    socket.data.waitingRoomId = '';
   }
 }
 
@@ -320,6 +358,8 @@ function registerSocketHandlers(io) {
   });
 
   io.on('connection', (socket) => {
+    recordSocketConnection();
+    socket.onAny((event) => recordSocketEvent(event, 'in'));
     logSocketLifecycle(`Socket connected: ${socket.id}`);
 
     const handleChatMessage = async (payload = {}, acknowledge) => {
@@ -400,6 +440,11 @@ function registerSocketHandlers(io) {
       await emitPermissions(io, roomId);
       socket.emit('whiteboard-state', { strokes: await roomStateService.getWhiteboardState(roomId) });
       socket.emit('code-state', codeState);
+      const ydoc = getOrCreateRoomYDoc(roomId, codeState.code);
+      socket.emit('yjs-code-init', {
+        update: Array.from(Y.encodeStateAsUpdate(ydoc)),
+        language: codeState.language,
+      });
       socket.emit(
         'shared-file-state',
         (await roomStateService.getSharedFileState(roomId)) || defaultSharedFileState,
@@ -409,6 +454,19 @@ function registerSocketHandlers(io) {
         socket.emit('recording-started', recordingState);
       }
       acknowledge?.({ ok: true, participant, participants: await getParticipants(roomId) });
+    });
+
+    socket.on('leave-room', async (payload = {}, acknowledge) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(payload?.roomId || socket.data.roomId);
+        if (normalizedRoomId) {
+          socket.data.roomId = normalizedRoomId;
+        }
+        await removeSocketFromRooms(io, socket);
+        acknowledge?.({ ok: true });
+      } catch (error) {
+        acknowledge?.({ ok: false, message: error.message || 'Could not leave room' });
+      }
     });
 
     socket.on('approve-user', async ({ roomId, targetSocketId } = {}) => {
@@ -510,6 +568,149 @@ function registerSocketHandlers(io) {
         fromSocketId: socket.id,
         candidate,
       });
+    });
+
+    // ── Mediasoup SFU Signaling ───────────────────────────────────────────
+    socket.on('get-router-rtp-capabilities', async ({ roomId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        if (!normalizedRoomId) {
+          callback?.({ ok: false, message: 'Meeting ID is required' });
+          return;
+        }
+
+        await mediasoupManager.getOrCreateRouter(normalizedRoomId);
+        const rtpCapabilities = mediasoupManager.getRouterRtpCapabilities(normalizedRoomId);
+        callback?.({ ok: true, rtpCapabilities });
+      } catch (error) {
+        console.error('[mediasoup] get-router-rtp-capabilities error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('create-webrtc-transport', async ({ roomId, producing, consuming, forceWorkerIndex } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        if (!normalizedRoomId) {
+          callback?.({ ok: false, message: 'Meeting ID is required' });
+          return;
+        }
+
+        const transportParams = await mediasoupManager.createWebRtcTransport(normalizedRoomId, socket.id, {
+          producing: Boolean(producing),
+          consuming: Boolean(consuming),
+          forceWorkerIndex,
+        });
+        callback?.({ ok: true, params: transportParams });
+      } catch (error) {
+        console.error('[mediasoup] create-webrtc-transport error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('connect-transport', async ({ roomId, transportId, dtlsParameters } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        await mediasoupManager.connectTransport(normalizedRoomId, socket.id, transportId, dtlsParameters);
+        callback?.({ ok: true });
+      } catch (error) {
+        console.error('[mediasoup] connect-transport error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('produce-media', async ({ roomId, transportId, kind, rtpParameters, appData } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        const producer = await mediasoupManager.createProducer(normalizedRoomId, socket.id, transportId, {
+          kind,
+          rtpParameters,
+          appData,
+        });
+
+        socket.to(normalizedRoomId).emit('new-producer', {
+          producerId: producer.id,
+          producerSocketId: socket.id,
+          kind: producer.kind,
+          appData: producer.appData,
+        });
+
+        callback?.({ ok: true, id: producer.id });
+      } catch (error) {
+        console.error('[mediasoup] produce-media error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('consume-media', async ({ roomId, transportId, producerId, rtpCapabilities } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        const consumerParams = await mediasoupManager.createConsumer(normalizedRoomId, socket.id, transportId, {
+          producerId,
+          rtpCapabilities,
+        });
+        callback?.({ ok: true, params: consumerParams });
+      } catch (error) {
+        console.error('[mediasoup] consume-media error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('resume-consumer', async ({ roomId, consumerId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        await mediasoupManager.resumeConsumer(normalizedRoomId, socket.id, consumerId);
+        callback?.({ ok: true });
+      } catch (error) {
+        console.error('[mediasoup] resume-consumer error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('pause-producer', async ({ roomId, producerId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        await mediasoupManager.pauseProducer(normalizedRoomId, socket.id, producerId);
+        callback?.({ ok: true });
+      } catch (error) {
+        console.error('[mediasoup] pause-producer error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('resume-producer', async ({ roomId, producerId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        await mediasoupManager.resumeProducer(normalizedRoomId, socket.id, producerId);
+        callback?.({ ok: true });
+      } catch (error) {
+        console.error('[mediasoup] resume-producer error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('close-producer', async ({ roomId, producerId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        await mediasoupManager.closeProducer(normalizedRoomId, socket.id, producerId);
+        socket.to(normalizedRoomId).emit('producer-closed', { producerId, producerSocketId: socket.id });
+        callback?.({ ok: true });
+      } catch (error) {
+        console.error('[mediasoup] close-producer error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
+    });
+
+    socket.on('get-producers', async ({ roomId } = {}, callback) => {
+      try {
+        const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+        const producers = mediasoupManager.getProducersForRoom(normalizedRoomId)
+          .filter((p) => p.producerSocketId !== socket.id);
+        callback?.({ ok: true, producers });
+      } catch (error) {
+        console.error('[mediasoup] get-producers error:', error);
+        callback?.({ ok: false, message: error.message });
+      }
     });
 
     socket.on('toggle-mic', async ({ roomId, micOn } = {}) => {
@@ -879,6 +1080,40 @@ function registerSocketHandlers(io) {
       acknowledge?.({ ok: true, strokeId: removedStroke.id });
     });
 
+    socket.on('yjs-code-update', async ({ roomId, update } = {}) => {
+      const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+      const participant = await roomStateService.getParticipant(normalizedRoomId, socket.id);
+      if (!participant || !update) return;
+
+      const doc = getOrCreateRoomYDoc(normalizedRoomId);
+      try {
+        Y.applyUpdate(doc, new Uint8Array(update));
+      } catch (err) {
+        console.error('Error applying Yjs update on server:', err);
+      }
+
+      socket.to(normalizedRoomId).emit('yjs-code-update', { update });
+
+      const currentCode = doc.getText('monaco').toString();
+      const codeState = (await roomStateService.getCodeEditorState(normalizedRoomId)) || {
+        ...defaultCodeState,
+      };
+      const nextState = {
+        ...codeState,
+        code: currentCode,
+        activeUser: editorPersonFromParticipant(participant),
+        version: Date.now(),
+      };
+      await roomStateService.updateCodeEditorState(normalizedRoomId, nextState);
+      persistCodeSnapshot(normalizedRoomId, nextState, participant);
+    });
+
+    socket.on('yjs-awareness-update', ({ roomId, update } = {}) => {
+      const normalizedRoomId = normalizeRoomId(roomId || socket.data.roomId);
+      if (!update) return;
+      socket.to(normalizedRoomId).emit('yjs-awareness-update', { update });
+    });
+
     socket.on('code-change', async (payload = {}, acknowledge) => {
       const normalizedRoomId = normalizeRoomId(payload.roomId || socket.data.roomId);
       const participant = await roomStateService.getParticipant(normalizedRoomId, socket.id);
@@ -892,11 +1127,19 @@ function registerSocketHandlers(io) {
         ...defaultCodeState,
         cursors: {},
       };
-      const code = String(payload.code || '').slice(0, 200000);
+      const rawCode = typeof payload.code === 'string'
+        ? payload.code
+        : typeof payload.code?.code === 'string'
+          ? payload.code.code
+          : '';
+      const code = String(rawCode).slice(0, 200000);
+      const language = sanitizeLanguage(
+        payload.language || payload.code?.language || state.language
+      );
       const nextState = {
         ...state,
         code,
-        language: sanitizeLanguage(payload.language || state.language),
+        language,
         activeUser: editorPersonFromParticipant(participant),
         version: Date.now(),
       };
@@ -1130,7 +1373,21 @@ function registerSocketHandlers(io) {
         return;
       }
 
+      mediasoupManager.handleSocketDisconnect(normalizedRoomId, target.socketId);
       await roomStateService.removeParticipant(normalizedRoomId, target.socketId);
+      try {
+        const codeState = await roomStateService.getCodeEditorState(normalizedRoomId);
+        if (codeState?.cursors && codeState.cursors[target.socketId]) {
+          const nextCursors = { ...codeState.cursors };
+          delete nextCursors[target.socketId];
+          await roomStateService.updateCodeEditorState(normalizedRoomId, {
+            ...codeState,
+            cursors: nextCursors,
+          });
+        }
+      } catch (cursorError) {
+        console.error('Could not clean up code editor cursor:', cursorError);
+      }
       logActivity(normalizedRoomId, moderator, `Removed ${target.name}`).catch((error) => {
         console.error('Could not save activity log:', error);
       });
@@ -1164,11 +1421,15 @@ function registerSocketHandlers(io) {
       }
 
       io.to(normalizedRoomId).emit('end-meeting', { roomId: normalizedRoomId });
+      recoverAllUnfinishedRecordings(normalizedRoomId).catch(() => {});
+      mediasoupManager.closeRoom(normalizedRoomId);
+      roomYDocs.delete(normalizedRoomId);
       await roomStateService.expireRoomState(normalizedRoomId);
       io.in(normalizedRoomId).socketsLeave(normalizedRoomId);
     });
 
     socket.on('disconnect', () => {
+      recordSocketDisconnection();
       removeSocketFromRooms(io, socket).catch((error) => {
         console.error('Could not remove socket from Redis room state:', error);
       });

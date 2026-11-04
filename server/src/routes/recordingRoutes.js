@@ -4,8 +4,13 @@ import { Router } from 'express';
 import multer from 'multer';
 import { isS3StorageEnabled, recordingUploadRoot } from '../config/storage.js';
 import {
+  assembleRecordingSession,
+  getActiveRecordingSessions,
   getMeetingRecordings,
+  getRecordingManifest,
+  recoverRecordingSession,
   uploadRecording,
+  uploadRecordingChunk,
 } from '../controllers/recordingController.js';
 import { normalizeMeetingId } from '../utils/normalizeMeetingId.js';
 import {
@@ -41,7 +46,33 @@ const upload = multer({
   },
 });
 
+const chunkUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB per chunk max
+  },
+});
+
+// Original full-file upload endpoint (preserved for backward compatibility)
 router.post('/upload/:meetingId', upload.single('recording'), uploadRecording);
+
+// Incremental chunk upload endpoints
+router.post('/chunk/:meetingId/:recordingId', chunkUpload.single('chunk'), uploadRecordingChunk);
+router.post('/chunk/:meetingId', chunkUpload.single('chunk'), uploadRecordingChunk);
+
+// Finalization and assembly
+router.post('/assemble/:meetingId/:recordingId', assembleRecordingSession);
+router.post('/assemble/:meetingId', assembleRecordingSession);
+
+// Recovery for midway crashes
+router.post('/recover/:meetingId/:recordingId', recoverRecordingSession);
+router.post('/recover/:meetingId', recoverRecordingSession);
+
+// Manifest and active sessions
+router.get('/manifest/:meetingId/:recordingId', getRecordingManifest);
+router.get('/active/:meetingId', getActiveRecordingSessions);
+
+// List meeting recordings
 router.get('/:meetingId', getMeetingRecordings);
 
 export default router;

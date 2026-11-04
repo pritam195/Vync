@@ -80,10 +80,10 @@ Vync focuses on browser-based meeting collaboration. The implemented scope inclu
 Out of scope for the current implementation:
 
 - Native desktop or mobile applications.
-- Cloud storage integration for uploaded media.
+- Native desktop/mobile apps (supported via cross-device responsive web).
 - Email delivery for password reset OTPs.
 - End-to-end encrypted meeting media and chat.
-- Large-scale SFU/MCU media routing for high-participant meetings.
+- Large-scale MCU media mixing (SFU selective forwarding with multi-worker scaling and PipeTransport routing is implemented).
 
 ## 5. Proposed System
 
@@ -282,11 +282,15 @@ Socket.IO manages:
 - Whiteboard strokes and code editor state.
 - Shared file state and recording status.
 
-### 10.6 WebRTC Module
+### 10.6 WebRTC SFU Media Module
 
-WebRTC is used for browser-to-browser media transmission. The frontend creates `RTCPeerConnection` objects for remote participants. Socket.IO is used only for signaling, while actual audio/video media is exchanged through peer connections.
+WebRTC media transmission is powered by an embedded **mediasoup SFU (Selective Forwarding Unit)** architecture:
+- The backend manages a pool of C++ mediasoup worker processes and dynamically instantiates audio/video routers for active rooms.
+- Each client maintains two WebRTC transports with the SFU server: a **SendTransport** for publishing local audio, video, and screen-sharing tracks, and a **RecvTransport** for consuming remote tracks.
+- Client upstream bandwidth is constant ($O(1)$) rather than mesh ($O(N)$), enabling meetings to scale cleanly to dozens of participants.
+- Socket.IO serves as the signaling plane for transport negotiation, track production, and consumption synchronization.
 
-The system uses a public STUN server:
+The system uses a public STUN server for ICE candidate discovery:
 
 ```js
 stun:stun.l.google.com:19302

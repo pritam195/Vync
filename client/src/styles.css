@@ -958,3 +958,27 @@
     transform: translateX(3px);
   }
 }
+
+/* Collaborative Monaco CRDT Awareness Styles */
+.yRemoteSelection {
+  background-color: rgba(99, 102, 241, 0.25);
+  position: absolute;
+}
+
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left: #6366f1 solid 2px;
+  border-top: #6366f1 solid 2px;
+  border-bottom: #6366f1 solid 2px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+  position: absolute;
+  content: ' ';
+  border: 3px solid #6366f1;
+  border-radius: 4px;
+  left: -4px;
+  top: -5px;
+}

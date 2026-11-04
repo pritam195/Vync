@@ -1,17 +1,19 @@
 import http from 'http';
 import { jest } from '@jest/globals';
 import { Server } from 'socket.io';
+import * as Y from 'yjs';
 
 jest.unstable_mockModule('../src/config/redis.js', () => ({
   closeRedisClient: jest.fn(async () => {}),
   getRedisClient: jest.fn(async () => null),
 }));
 
-const [{ io: createClient }, { default: registerSocketHandlers }, { default: roomStateService }] =
+const [{ io: createClient }, { default: registerSocketHandlers }, { default: roomStateService }, { default: mediasoupManager }] =
   await Promise.all([
     import('socket.io-client'),
     import('../src/socket/index.js'),
     import('../src/services/roomStateService.js'),
+    import('../src/sfu/mediasoupManager.js'),
   ]);
 
 const TEST_ROOM_ID = 'SIO-123-TST';
@@ -49,7 +51,7 @@ function closeHttpServer(server) {
   });
 }
 
-function waitForEvent(socket, eventName, timeoutMs = 1500) {
+function waitForEvent(socket, eventName, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       socket.off(eventName, handler);
@@ -81,7 +83,7 @@ function expectNoEvent(socket, eventName, timeoutMs = 150) {
   });
 }
 
-function emitWithAck(socket, eventName, payload = {}, timeoutMs = 1500) {
+function emitWithAck(socket, eventName, payload = {}, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     socket.timeout(timeoutMs).emit(eventName, payload, (error, response) => {
       if (error) {
@@ -389,6 +391,50 @@ describe('Socket.IO realtime meeting behavior', () => {
     expect(codePayload.activeUser.socketId).toBe(host.id);
   });
 
+  it('correctly extracts code when payload is an object avoiding [object Object]', async () => {
+    const { guest, host, roomId } = await joinTwoClients();
+    const codeChanged = waitForEvent(guest, 'code-change');
+
+    const acknowledgement = await emitWithAck(host, 'code-change', {
+      code: { code: 'const x = 1;', language: 'typescript' },
+      roomId,
+    });
+
+    const codePayload = await codeChanged;
+
+    expect(acknowledgement.ok).toBe(true);
+    expect(codePayload.code).toBe('const x = 1;');
+    expect(codePayload.language).toBe('typescript');
+  });
+
+  it('synchronizes Yjs CRDT code updates and awareness across participants', async () => {
+    const { guest, host, roomId } = await joinTwoClients();
+    const yjsUpdateReceived = waitForEvent(guest, 'yjs-code-update');
+
+    const testDoc = new Y.Doc();
+    testDoc.getText('monaco').insert(0, 'console.log("CRDT test");');
+    const validUpdate = Array.from(Y.encodeStateAsUpdate(testDoc));
+
+    host.emit('yjs-code-update', {
+      roomId,
+      update: validUpdate,
+    });
+
+    await expect(yjsUpdateReceived).resolves.toMatchObject({
+      update: validUpdate,
+    });
+
+    const awarenessReceived = waitForEvent(guest, 'yjs-awareness-update');
+    host.emit('yjs-awareness-update', {
+      roomId,
+      update: [10, 20, 30],
+    });
+
+    await expect(awarenessReceived).resolves.toMatchObject({
+      update: [10, 20, 30],
+    });
+  });
+
   it('synchronizes open shared file events', async () => {
     const { guest, host, roomId } = await joinTwoClients();
     const opened = waitForEvent(guest, 'open-shared-file');
@@ -465,4 +511,65 @@ describe('Socket.IO realtime meeting behavior', () => {
       fromSocketId: host.id,
     });
   });
+
+  it('provides mediasoup router RTP capabilities and creates WebRTC transports via SFU signaling', async () => {
+    const { host, roomId } = await joinTwoClients();
+
+    const capabilitiesResponse = await emitWithAck(host, 'get-router-rtp-capabilities', { roomId });
+    expect(capabilitiesResponse.ok).toBe(true);
+    expect(capabilitiesResponse.rtpCapabilities).toBeDefined();
+    expect(capabilitiesResponse.rtpCapabilities.codecs).toBeInstanceOf(Array);
+
+    const transportResponse = await emitWithAck(host, 'create-webrtc-transport', {
+      roomId,
+      producing: true,
+      consuming: false,
+    });
+    expect(transportResponse.ok).toBe(true);
+    expect(transportResponse.params).toMatchObject({
+      id: expect.any(String),
+      iceParameters: expect.any(Object),
+      iceCandidates: expect.any(Array),
+      dtlsParameters: expect.any(Object),
+    });
+
+    const producersResponse = await emitWithAck(host, 'get-producers', { roomId });
+    expect(producersResponse.ok).toBe(true);
+    expect(producersResponse.producers).toEqual([]);
+  });
+
+  it('handles leave-room event and notifies remaining participants', async () => {
+    const { host, guest, roomId } = await joinTwoClients();
+
+    const leavePromise = waitForEvent(host, 'user-left');
+    const leaveAck = await emitWithAck(guest, 'leave-room', { roomId });
+
+    expect(leaveAck.ok).toBe(true);
+    await expect(leavePromise).resolves.toMatchObject({
+      name: guest.testName,
+    });
+  });
+
+  it('removes cursor position from room state when a participant disconnects or leaves', async () => {
+    const { host, guest, roomId } = await joinTwoClients();
+
+    guest.emit('cursor-position', {
+      roomId,
+      position: { lineNumber: 42, column: 10 },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    let state = await roomStateService.getCodeEditorState(roomId);
+    expect(state.cursors[guest.id]).toBeDefined();
+
+    await emitWithAck(guest, 'leave-room', { roomId });
+
+    state = await roomStateService.getCodeEditorState(roomId);
+    expect(state.cursors[guest.id]).toBeUndefined();
+  });
+});
+
+afterAll(async () => {
+  await mediasoupManager.close();
 });

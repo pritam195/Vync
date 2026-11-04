@@ -732,7 +732,41 @@ export function createRoomStateService({
     };
   }
 
+  async function getActiveRoomsSummary() {
+    return withRedisFallback(
+      'getActiveRoomsSummary',
+      async (client) => {
+        const stateKeys = await client.keys('room:*:state');
+        let totalParticipants = 0;
+        const roomIds = [];
+        for (const key of stateKeys) {
+          const match = key.match(/^room:(.+):state$/);
+          if (match) {
+            const rId = match[1];
+            roomIds.push(rId);
+            const count = await client.hLen(`room:${rId}:participants`);
+            totalParticipants += count;
+          }
+        }
+        return { activeRooms: roomIds.length, totalParticipants, roomIds };
+      },
+      () => {
+        let totalParticipants = 0;
+        const roomIds = [];
+        for (const [rId, room] of memoryRooms.entries()) {
+          pruneExpiredRoom(rId);
+          if (memoryRooms.has(rId)) {
+            roomIds.push(rId);
+            totalParticipants += room.participants.size;
+          }
+        }
+        return { activeRooms: roomIds.length, totalParticipants, roomIds };
+      },
+    );
+  }
+
   return {
+    getActiveRoomsSummary,
     addParticipant,
     addWaitingParticipant,
     addWhiteboardStroke,

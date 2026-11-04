@@ -102,10 +102,35 @@ function Meeting() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true,
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+      } catch (err) {
+        if (
+          err.name === 'NotFoundError' ||
+          err.name === 'DevicesNotFoundError' ||
+          err.name === 'NotReadableError' ||
+          err.name === 'TrackStartError' ||
+          err.name === 'AbortError'
+        ) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            setIsCameraOn(false);
+          } catch {
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+              setIsMicOn(false);
+            } catch {
+              throw err;
+            }
+          }
+        } else {
+          throw err;
+        }
+      }
       enableTracks(stream, 'audio', micPreferenceRef.current);
       enableTracks(stream, 'video', cameraPreferenceRef.current);
       setMediaStream(stream);
@@ -115,7 +140,7 @@ function Meeting() {
       setMediaError(
         requestError.name === 'NotAllowedError'
           ? 'Camera or microphone permission was blocked'
-          : 'Could not access your camera or microphone',
+          : 'Camera or microphone is busy in another app or unavailable',
       );
       setIsCameraOn(false);
       setIsMicOn(false);
@@ -213,14 +238,18 @@ function Meeting() {
     setError('');
 
     try {
+      let guestId = '';
       if (!currentUser) {
-        joinAsGuest(displayName);
+        const guestUser = joinAsGuest(displayName);
+        guestId = guestUser?.id || '';
+      } else if (currentUser?.role === 'guest' || currentUser?.id) {
+        guestId = currentUser.role === 'guest' ? currentUser.id : '';
       }
 
       const nextMeeting = await joinMeeting({
         meetingId,
         name: displayName,
-        guestId: currentUser ? '' : crypto.randomUUID(),
+        guestId,
       });
       setMeeting(nextMeeting);
       setHasJoined(true);

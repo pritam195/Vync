@@ -37,7 +37,7 @@ function VideoPlayer({
   }, [isCameraOn, stream]);
 
   useEffect(() => {
-    if (!stream || !participant?.micOn || isScreenShare) {
+    if (!stream || !participant?.micOn || isScreenShare || stream.getAudioTracks().length === 0) {
       setIsSpeaking(false);
       return;
     }
@@ -47,7 +47,7 @@ function VideoPlayer({
     let frameId;
 
     try {
-      audioContext = new AudioContext();
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 512;
@@ -64,6 +64,9 @@ function VideoPlayer({
       tick();
     } catch {
       setIsSpeaking(false);
+      if (audioContext?.state !== 'closed') {
+        audioContext?.close().catch(() => {});
+      }
     }
 
     return () => {

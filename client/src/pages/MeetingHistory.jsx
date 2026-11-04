@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarClock, History, Search } from 'lucide-react';
 import Sidebar from '../components/Sidebar.jsx';
 import { Skeleton } from '../components/ui/Skeleton.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { getMeetingHistory } from '../services/meetings.js';
 
 function formatDate(value) {
@@ -57,6 +58,7 @@ function EmptyHistory() {
 }
 
 function MeetingHistory() {
+  const { isGuest } = useAuth();
   const [meetings, setMeetings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,6 +68,14 @@ function MeetingHistory() {
     let isMounted = true;
 
     async function loadHistory() {
+      if (isGuest) {
+        if (isMounted) {
+          setMeetings([]);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
         const nextMeetings = await getMeetingHistory();
         if (isMounted) {
@@ -89,7 +99,7 @@ function MeetingHistory() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isGuest]);
 
   const filteredMeetings = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

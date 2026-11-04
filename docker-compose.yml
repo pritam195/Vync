@@ -42,6 +42,10 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-replace-with-secret-access-key}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET:-vync-uploads}
       AWS_S3_PUBLIC_BASE_URL: ${AWS_S3_PUBLIC_BASE_URL:-}
+      MEDIASOUP_LISTEN_IP: ${MEDIASOUP_LISTEN_IP:-0.0.0.0}
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIASOUP_ANNOUNCED_IP:-127.0.0.1}
+      MEDIASOUP_MIN_PORT: ${MEDIASOUP_MIN_PORT:-40000}
+      MEDIASOUP_MAX_PORT: ${MEDIASOUP_MAX_PORT:-40100}
     depends_on:
       mongo:
         condition: service_healthy
@@ -49,6 +53,7 @@ services:
         condition: service_healthy
     ports:
       - "5000:5000"
+      - "40000-40100:40000-40100/udp"
     volumes:
       - server_uploads:/app/server/uploads
     restart: unless-stopped

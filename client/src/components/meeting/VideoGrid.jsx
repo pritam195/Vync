@@ -76,25 +76,25 @@ function VideoGrid({
   remoteStreams,
   screenShareStream,
 }) {
-  const localParticipant = participants.find(
-    (participant) => participant.socketId === localSocketId,
-  ) || {
-    userId: 'local',
-    socketId: localSocketId || 'local',
-    name: 'You',
-    role: 'participant',
-    micOn: true,
-    cameraOn: isCameraOn,
-    handRaised: false,
-    isScreenSharing: false,
-  };
-  const remoteParticipants = participants.filter(
-    (participant) => participant.socketId !== localSocketId,
-  );
-  const allParticipants = useMemo(
-    () => [localParticipant, ...remoteParticipants],
-    [localParticipant, remoteParticipants],
-  );
+  const allParticipants = useMemo(() => {
+    const local = participants.find(
+      (participant) => participant.socketId === localSocketId,
+    ) || {
+      userId: 'local',
+      socketId: localSocketId || 'local',
+      name: 'You',
+      role: 'participant',
+      micOn: true,
+      cameraOn: isCameraOn,
+      handRaised: false,
+      isScreenSharing: false,
+    };
+    const remote = participants.filter(
+      (participant) => participant.socketId !== localSocketId,
+    );
+    return [local, ...remote];
+  }, [participants, localSocketId, isCameraOn]);
+  const localParticipant = allParticipants[0];
   const remotePresenter = !isScreenSharing
     ? participants.find((participant) => participant.isScreenSharing && participant.socketId !== localSocketId)
     : null;

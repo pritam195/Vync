@@ -8,6 +8,7 @@ import { useWebRTC } from '../../hooks/useWebRTC.js';
 import ControlBar from './ControlBar.jsx';
 import RightSidebar from './RightSidebar.jsx';
 import VideoGrid from './VideoGrid.jsx';
+import { uploadRecordingChunk, assembleRecordingSession } from '../../services/recordings.js';
 
 function formatMeetingDuration(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -59,6 +60,9 @@ function MeetingRoom({
   const recordingStartedAtRef = useRef(null);
   const recordingStreamRef = useRef(null);
   const wasRecordingRef = useRef(false);
+  const recordingSessionIdRef = useRef('');
+  const chunkIndexRef = useRef(0);
+  const chunkUploadChainRef = useRef(Promise.resolve());
   const roomId = meeting?.meetingId;
 
   const userId = useMemo(
@@ -66,7 +70,8 @@ function MeetingRoom({
     [currentUser],
   );
   const requestedRole =
-    meeting?.host?.userId && String(meeting.host.userId) === String(userId)
+    (meeting?.host?.userId && String(meeting.host.userId) === String(userId)) ||
+    (meeting?.host?.guestId && String(meeting.host.guestId) === String(userId))
       ? 'host'
       : isGuest
         ? 'guest'
@@ -122,6 +127,8 @@ function MeetingRoom({
     sendWhiteboardClear,
     sendWhiteboardDraw,
     sendWhiteboardUndo,
+    yDoc,
+    awareness,
   } = useWebRTC({
     displayName: displayName || currentUser?.name || 'Guest',
     initialCameraOn,
@@ -301,6 +308,30 @@ function MeetingRoom({
       );
     };
 
+    const onShortcutToggleMic = () => {
+      toggleMic();
+      showToast({
+        message: isMicOn ? 'Microphone muted' : 'Microphone unmuted',
+        title: 'Shortcut Ctrl+Alt+M',
+      });
+    };
+
+    const onShortcutToggleCamera = () => {
+      toggleCamera();
+      showToast({
+        message: isCameraOn ? 'Camera turned off' : 'Camera turned on',
+        title: 'Shortcut Ctrl+Alt+V',
+      });
+    };
+
+    const onShortcutToggleHand = () => {
+      toggleHand();
+      showToast({
+        message: isHandRaised ? 'Hand lowered' : 'Hand raised',
+        title: 'Shortcut Ctrl+Alt+H',
+      });
+    };
+
     const handleKeyDown = (event) => {
       if (isTypingTarget(event.target)) {
         return;
@@ -346,30 +377,6 @@ function MeetingRoom({
         event.preventDefault();
         onShortcutToggleHand();
       }
-    };
-
-      const onShortcutToggleMic = () => {
-      toggleMic();
-      showToast({
-        message: isMicOn ? 'Microphone muted' : 'Microphone unmuted',
-        title: 'Shortcut Ctrl+Alt+M',
-      });
-    };
-
-    const onShortcutToggleCamera = () => {
-      toggleCamera();
-      showToast({
-        message: isCameraOn ? 'Camera turned off' : 'Camera turned on',
-        title: 'Shortcut Ctrl+Alt+V',
-      });
-    };
-
-    const onShortcutToggleHand = () => {
-      toggleHand();
-      showToast({
-        message: isHandRaised ? 'Hand lowered' : 'Hand raised',
-        title: 'Shortcut Ctrl+Alt+H',
-      });
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -467,9 +474,14 @@ function MeetingRoom({
       const mimeType = getSupportedRecordingMimeType();
       const recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
       const startedAt = new Date().toISOString();
+      const sessionId = `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
       recordingChunksRef.current = [];
       recordingStartedAtRef.current = startedAt;
+      recordingSessionIdRef.current = sessionId;
+      chunkIndexRef.current = 0;
+      chunkUploadChainRef.current = Promise.resolve();
+
       if (pendingRecording?.url) {
         URL.revokeObjectURL(pendingRecording.url);
       }
@@ -477,7 +489,30 @@ function MeetingRoom({
 
       recorder.ondataavailable = (event) => {
         if (event.data?.size) {
-          recordingChunksRef.current.push(event.data);
+          const chunk = event.data;
+          recordingChunksRef.current.push(chunk);
+
+          // Upload chunk incrementally to server with manifest tracking
+          const currentChunkIdx = chunkIndexRef.current++;
+          const recId = recordingSessionIdRef.current;
+          const fileName = recordingFileName(roomId, recordingStartedAtRef.current);
+
+          chunkUploadChainRef.current = chunkUploadChainRef.current
+            .then(async () => {
+              await uploadRecordingChunk(roomId, recId, chunk, {
+                chunkIndex: currentChunkIdx,
+                isLastChunk: false,
+                fileName,
+                recordedBy: {
+                  userId: String(userId || ''),
+                  name: String(currentUser?.name || displayName || 'Guest'),
+                  socketId: String(localSocketId || ''),
+                },
+              });
+            })
+            .catch((err) => {
+              console.warn('[MeetingRoom] Chunk upload error:', err);
+            });
         }
       };
 
@@ -499,18 +534,29 @@ function MeetingRoom({
           startedAt: recordingStartedAtRef.current,
           url,
         });
+
+        // Trigger assembly of uploaded chunks on server
+        const recId = recordingSessionIdRef.current;
+        chunkUploadChainRef.current = chunkUploadChainRef.current
+          .then(async () => {
+            if (recId) {
+              await assembleRecordingSession(roomId, recId).catch(() => {});
+            }
+          })
+          .catch(() => {});
+
         recordingChunksRef.current = [];
         mediaRecorderRef.current = null;
         await cleanupRecordingCapture();
         setIsPersonalRecording(false);
         showToast({
-          message: 'Your personal recording is ready to preview or save locally.',
+          message: 'Your personal recording is ready and backed up incrementally.',
           title: 'Recording ready',
           type: 'success',
         });
       };
 
-      recorder.start(1000);
+      recorder.start(2000);
       mediaRecorderRef.current = recorder;
       setIsPersonalRecording(true);
       showToast({
@@ -772,6 +818,8 @@ function MeetingRoom({
               onWhiteboardDraw={sendWhiteboardDraw}
               onWhiteboardUndo={sendWhiteboardUndo}
               participants={participants}
+              yDoc={yDoc}
+              awareness={awareness}
               permissions={permissions}
               sharedFiles={sharedFiles}
               sharedFileState={sharedFileState}

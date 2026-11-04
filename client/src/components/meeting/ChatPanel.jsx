@@ -235,24 +235,7 @@ function ChatPanel({
     setUnreadCount((count) => count + (nextCount - previousCount));
   }, [isAtBottom, isOwnMessage, searchQuery, visibleMessages]);
 
-  useEffect(() => {
-    previousCountRef.current = visibleMessages.length;
-    setUnreadCount(0);
-    window.requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-      handleScroll();
-    });
-  }, [receiverSocketId, visibleMessages.length]);
-
-  useEffect(
-    () => () => {
-      window.clearTimeout(typingTimerRef.current);
-      onStopTyping(receiverSocketId);
-    },
-    [onStopTyping, receiverSocketId],
-  );
-
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const element = scrollRef.current;
 
     if (!element) {
@@ -266,7 +249,24 @@ function ChatPanel({
     if (nearBottom) {
       setUnreadCount(0);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    previousCountRef.current = visibleMessages.length;
+    setUnreadCount(0);
+    window.requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+      handleScroll();
+    });
+  }, [handleScroll, receiverSocketId, visibleMessages.length]);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(typingTimerRef.current);
+      onStopTyping(receiverSocketId);
+    },
+    [onStopTyping, receiverSocketId],
+  );
 
   const sendMessage = ({ message, type = 'text' }) => {
     const nextMessage = String(message || '').trim();

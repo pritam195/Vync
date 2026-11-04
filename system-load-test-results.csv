@@ -1,0 +1,5 @@
+N,Status,JoinSuccess,AvgJoinMs,WorkerCPU,WorkerMaxRSS,PacketLoss,FrameDrop,AvgJitter,YjsConverged,YjsP50,YjsP95,WbDropped,WbP50,WbP95,RedisAvgOps,RedisPeakOps,RedisMem
+5,STABLE,100%,2883,12%,17.4 MB,0.00%,0.00%,4.6 ms,YES,43 ms,178 ms,0.00%,111 ms,194 ms,56,236,1.35 MB
+10,STABLE,100%,2609,29%,17.4 MB,0.00%,0.53%,10.1 ms,YES,144 ms,1044 ms,0.00%,449 ms,1036 ms,71,336,1.38 MB
+15,DEGRADED,100%,3527,-23%,16.1 MB,0.04%,3.69%,394.9 ms,NO,7571 ms,14816 ms,75.48%,8915 ms,16557 ms,67,531,1.38 MB
+20,DEGRADED,90%,4608,1%,16.0 MB,0.00%,5.18%,391.8 ms,NO,87 ms,923 ms,0.00%,391 ms,1460 ms,49,622,1.39 MB

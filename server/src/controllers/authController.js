@@ -87,6 +87,12 @@ export function getMe(req, res) {
 export async function forgotPassword(req, res, next) {
   try {
     const { email } = req.body;
+
+    if (!email) {
+      res.status(400);
+      throw new Error('Email is required');
+    }
+
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -112,6 +118,12 @@ export async function forgotPassword(req, res, next) {
 export async function verifyOTP(req, res, next) {
   try {
     const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400);
+      throw new Error('Email and OTP are required');
+    }
+
     const user = await User.findOne({
       email,
       resetOtp: otp,
@@ -132,6 +144,17 @@ export async function verifyOTP(req, res, next) {
 export async function resetPassword(req, res, next) {
   try {
     const { email, otp, password } = req.body;
+
+    if (!email || !otp || !password) {
+      res.status(400);
+      throw new Error('Email, OTP, and new password are required');
+    }
+
+    if (String(password).length < 6) {
+      res.status(400);
+      throw new Error('Password must be at least 6 characters');
+    }
+
     const user = await User.findOne({
       email,
       resetOtp: otp,

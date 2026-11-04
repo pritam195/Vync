@@ -57,6 +57,8 @@ function RightSidebar({
   typingParticipants,
   waitingParticipants,
   whiteboardEvents,
+  yDoc,
+  awareness,
 }) {
   const meta = panelMeta[activePanel] || panelMeta.participants;
   const subtitle = activePanel === 'participants' ? `${participants.length} in meeting` : meta.subtitle;
@@ -172,12 +174,14 @@ function RightSidebar({
         ) : null}
         {activePanel === 'code' ? (
           <CodeEditorPanel
+            awareness={awareness}
             codeEditorState={codeEditorState}
             localSocketId={localSocketId}
             meetingId={meetingId}
             onCodeChange={onCodeChange}
             onCursorPosition={onCursorPosition}
             onLanguageChange={onLanguageChange}
+            yDoc={yDoc}
           />
         ) : null}
         {activePanel === 'whiteboard' ? (

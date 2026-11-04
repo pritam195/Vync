@@ -10,7 +10,13 @@ export function errorHandler(error, req, res, next) {
 
   if (error.code === 11000) {
     statusCode = 409;
-    message = 'A meeting with that ID already exists';
+    if (error.keyPattern?.email) {
+      message = 'Email is already registered';
+    } else if (error.keyPattern?.meetingId) {
+      message = 'A meeting with that ID already exists';
+    } else {
+      message = 'Duplicate field value entered';
+    }
   } else if (error instanceof SyntaxError && error.type === 'entity.parse.failed') {
     statusCode = 400;
     message = 'Request body contains invalid JSON';

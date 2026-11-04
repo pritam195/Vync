@@ -16,13 +16,17 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.0",
     "lucide-react": "^1.22.0",
+    "mediasoup-client": "^3.26.0",
     "monaco-editor": "^0.55.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.3",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.6.0",
-    "vync": "file:.."
+    "vync": "file:..",
+    "y-monaco": "^0.1.6",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
